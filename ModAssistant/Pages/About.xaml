@@ -245,52 +245,6 @@
                 </StackPanel>
 
             </StackPanel>
-            <StackPanel
-            Grid.Row="9"
-            Margin="5"
-            HorizontalAlignment="Center"
-            Orientation="Horizontal">
-                <Button
-                x:Name="PatButton"
-                Height="30"
-                MinWidth="80"
-                Margin="0,0,5,0"
-                Padding="20,0,20,0"
-                x:FieldModifier="public"
-                Click="HeadpatsButton_Click"
-                Content="{DynamicResource About:HeadpatsButton}" />
-                <Button
-                x:Name="HugButton"
-                Height="30"
-                MinWidth="80"
-                Margin="5,0,0,0"
-                Padding="20,0,20,0"
-                x:FieldModifier="public"
-                Click="HugsButton_Click"
-                Content="{DynamicResource About:HugsButton}" />
-            </StackPanel>
-            <Popup
-            x:Name="PatUp"
-            Width="auto"
-            Height="auto"
-            Placement="Center">
-                <Border BorderBrush="Gray" BorderThickness="3">
-                    <wfi:WindowsFormsHost>
-                        <winForms:PictureBox x:Name="PatImage" />
-                    </wfi:WindowsFormsHost>
-                </Border>
-            </Popup>
-            <Popup
-            x:Name="HugUp"
-            Width="auto"
-            Height="auto"
-            Placement="Center">
-                <Border BorderBrush="Gray" BorderThickness="3">
-                    <wfi:WindowsFormsHost>
-                        <winForms:PictureBox x:Name="HugImage" />
-                    </wfi:WindowsFormsHost>
-                </Border>
-            </Popup>
         </Grid>
     </ScrollViewer>
 </Page>

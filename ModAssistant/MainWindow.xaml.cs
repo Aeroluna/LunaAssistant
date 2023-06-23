@@ -57,7 +57,7 @@ namespace ModAssistant
                 Instance.ModsButton.IsEnabled = false;
                 Instance.OptionsButton.IsEnabled = false;
                 Instance.IntroButton.IsEnabled = false;
-                Instance.AboutButton.IsEnabled = false;
+                //Instance.AboutButton.IsEnabled = false;
                 Instance.GameVersionsBox.IsEnabled = false;
                 return;
             }
@@ -114,16 +114,12 @@ namespace ModAssistant
         {
             try
             {
-                var resp = await HttpClient.GetAsync(Utils.Constants.BeatModsVersions);
+                var resp = await HttpClient.GetAsync(Utils.Constants.LunarModsVersions);
                 var body = await resp.Content.ReadAsStringAsync();
-                List<string> versions = JsonSerializer.Deserialize<string[]>(body).ToList();
-
-                resp = await HttpClient.GetAsync(Utils.Constants.BeatModsAlias);
-                body = await resp.Content.ReadAsStringAsync();
-                Dictionary<string, string[]> aliases = JsonSerializer.Deserialize<Dictionary<string, string[]>>(body);
+                List<string> versions = JsonSerializer.Deserialize<GameVersion[]>(body).Where(n => n.alpha == 0).Select(n => n.version).OrderByDescending(Version.Parse).ToList();
 
                 string version = Utils.GetVersion();
-                if (!versions.Contains(version) && CheckAliases(versions, aliases, version) == string.Empty)
+                if (!versions.Contains(version))
                 {
                     versions.Insert(0, version);
                 }
@@ -131,7 +127,7 @@ namespace ModAssistant
 
                 Dispatcher.Invoke(() =>
                 {
-                    GameVersion = GetGameVersion(version, versions, aliases);
+                    GameVersion = GetGameVersion(version, versions);
 
                     GameVersionsBox.ItemsSource = versions;
                     GameVersionsBox.SelectedValue = GameVersion;
@@ -164,17 +160,11 @@ namespace ModAssistant
             }
         }
 
-        private string GetGameVersion(string version, List<string> versions, Dictionary<string, string[]> aliases)
+        private string GetGameVersion(string version, List<string> versions)
         {
             if (!string.IsNullOrEmpty(version) && versions.Contains(version))
             {
                 return version;
-            }
-
-            string aliasOf = CheckAliases(versions, aliases, version);
-            if (!string.IsNullOrEmpty(aliasOf))
-            {
-                return aliasOf;
             }
 
             string versionsString = string.Join(",", versions.ToArray());
@@ -194,24 +184,6 @@ namespace ModAssistant
             if (!string.IsNullOrEmpty(Properties.Settings.Default.GameVersion) && versions.Contains(Properties.Settings.Default.GameVersion))
                 return Properties.Settings.Default.GameVersion;
             return versions[0];
-        }
-
-        private string CheckAliases(List<string> versions, Dictionary<string, string[]> aliasesDict, string detectedVersion)
-        {
-            Dictionary<string, List<string>> aliases = aliasesDict.ToDictionary(x => x.Key, x => x.Value.ToList());
-            foreach (string version in versions)
-            {
-                if (aliases.TryGetValue(version, out var x))
-                {
-                    if (x.Contains(detectedVersion))
-                    {
-                        GameVersionOverride = detectedVersion;
-                        return version;
-                    }
-                }
-            }
-
-            return string.Empty;
         }
 
         private async Task ShowModsPage()
@@ -286,7 +258,7 @@ namespace ModAssistant
                 return;
             }
             Mods.ModListItem mod = ((Mods.ModListItem)Mods.Instance.ModsListView.SelectedItem);
-            string infoUrl = mod.ModInfo.link;
+            string infoUrl = $"{Utils.Constants.LunarModsURL}/mod/{mod.ModInfo.id}";
             if (string.IsNullOrEmpty(infoUrl))
             {
                 MessageBox.Show(string.Format((string)Application.Current.FindResource("MainWindow:NoModInfoPage"), mod.ModName));
@@ -316,21 +288,6 @@ namespace ModAssistant
                 await ShowModsPage();
 
                 Main.Content = prevPage;
-            }
-        }
-
-        private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (About.Instance.PatUp.IsOpen)
-            {
-                About.Instance.PatUp.IsOpen = false;
-                About.Instance.PatButton.IsEnabled = true;
-            }
-
-            if (About.Instance.HugUp.IsOpen)
-            {
-                About.Instance.HugUp.IsOpen = false;
-                About.Instance.HugButton.IsEnabled = true;
             }
         }
 

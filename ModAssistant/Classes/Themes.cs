@@ -23,7 +23,7 @@ namespace ModAssistant
         /// Local dictionary of Resource Dictionaries mapped by their names.
         /// </summary>
         private static readonly Dictionary<string, Theme> loadedThemes = new Dictionary<string, Theme>();
-        private static readonly List<string> preInstalledThemes = new List<string> { "Light", "Dark", "BSMG", "Light Pink", "Anniversary" };
+        private static readonly List<string> preInstalledThemes = new List<string> { "Luna", "Light", "Dark", "BSMG", "Light Pink", "Anniversary" };
 
         /// <summary>
         /// Index of "LoadedTheme" in App.xaml
@@ -129,7 +129,7 @@ namespace ModAssistant
                 }
                 catch
                 {
-                    ApplyTheme("Light", false);
+                    ApplyTheme("Luna", false);
                 }
                 return;
             }
@@ -246,12 +246,12 @@ namespace ModAssistant
                 {
                     if ((int)registryValueObject <= 0)
                     {
-                        ApplyTheme("Dark", false);
+                        ApplyTheme("Luna", false);
                         return;
                     }
                 }
 
-                ApplyTheme("Light", false);
+                ApplyTheme("Luna", false);
             }
         }
 

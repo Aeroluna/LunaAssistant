@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -24,11 +26,12 @@ namespace ModAssistant.Pages
     {
         public static Mods Instance = new Mods();
 
-        public List<string> DefaultMods = new List<string> { "SongCore", "WhyIsThereNoLeaderboard", "BeatSaverDownloader", "BeatSaverVoting", "PlaylistManager" };
+        //public List<string> DefaultMods = new List<string> { "SongCore", "WhyIsThereNoLeaderboard", "BeatSaverDownloader", "BeatSaverVoting", "PlaylistManager" };
+        public List<string> DefaultMods = new List<string>();
         public Mod[] ModsList;
         public Mod[] AllModsList;
-        public static List<Mod> InstalledMods = new List<Mod>();
-        public static List<Mod> ManifestsToMatch = new List<Mod>();
+        public static List<InstalledMod> InstalledMods = new List<InstalledMod>();
+        //public static List<Mod> ManifestsToMatch = new List<Mod>();
         public List<string> CategoryNames = new List<string>();
         public CollectionView view;
         public bool PendingChanges;
@@ -103,7 +106,7 @@ namespace ModAssistant.Pages
                     Array.Clear(AllModsList, 0, AllModsList.Length);
                 }
 
-                InstalledMods = new List<Mod>();
+                InstalledMods = new List<InstalledMod>();
                 CategoryNames = new List<string>();
                 ModList = new List<ModListItem>();
 
@@ -148,8 +151,8 @@ namespace ModAssistant.Pages
                         var aRequired = !a.IsEnabled;
                         var bRequired = !b.IsEnabled;
 
-                        if (a.ModRequired && !b.ModRequired) return -1;
-                        if (b.ModRequired && !a.ModRequired) return 1;
+                        //if (a.ModRequired && !b.ModRequired) return -1;
+                        //if (b.ModRequired && !a.ModRequired) return 1;
 
                         return a.ModName.CompareTo(b.ModName);
                     });
@@ -183,16 +186,12 @@ namespace ModAssistant.Pages
         {
             await GetAllMods();
 
-            GetBSIPAVersion();
-            CheckInstallDir("IPA/Pending/Plugins");
-            CheckInstallDir("IPA/Pending/Libs");
-            CheckInstallDir("Plugins");
-            CheckInstallDir("Libs");
+            CheckInstallDir("BepInEx/installed.txt");
         }
 
         public async Task GetAllMods()
         {
-            var resp = await HttpClient.GetAsync(Utils.Constants.BeatModsAPIUrl + "mod");
+            var resp = await HttpClient.GetAsync(Utils.Constants.LunarModsAPIUrl + "mod");
             var body = await resp.Content.ReadAsStringAsync();
 
             try
@@ -208,72 +207,47 @@ namespace ModAssistant.Pages
 
         private void CheckInstallDir(string directory)
         {
-            if (!Directory.Exists(Path.Combine(App.BeatSaberInstallDirectory, directory)))
+            string fileName = Path.Combine(App.BeatSaberInstallDirectory, directory);
+            if (!File.Exists(fileName))
             {
                 return;
             }
 
-            foreach (string file in Directory.GetFileSystemEntries(Path.Combine(App.BeatSaberInstallDirectory, directory)))
-            {
-                string fileExtension = Path.GetExtension(file);
-
-                if (File.Exists(file) && (fileExtension == ".dll" || fileExtension == ".exe" || fileExtension == ".manifest"))
+            using (FileStream fileStream = File.OpenRead(fileName))
+            using (StreamReader streamReader = new StreamReader(fileStream)) {
+                string line;
+                while ((line = streamReader.ReadLine()) != null)
                 {
-                    Mod mod = GetModFromHash(Utils.CalculateMD5(file));
+                    int split = line.IndexOf('/');
+                    if (split == -1)
+                    {
+                        continue;
+                    }
+
+                    Mod mod = AllModsList.FirstOrDefault(n => n.name == line.Substring(0, split));
+                    string version = line.Substring(split + 1);
                     if (mod != null)
                     {
-                        if (fileExtension == ".manifest")
-                        {
-                            ManifestsToMatch.Add(mod);
-                        }
-                        else
-                        {
-                            if (directory.Contains("Libs"))
-                            {
-                                if (!ManifestsToMatch.Contains(mod))
-                                {
-                                    continue;
-                                }
-
-                                ManifestsToMatch.Remove(mod);
-                            }
-
-                            AddDetectedMod(mod);
-                        }
+                        AddDetectedMod(mod, version);
                     }
                 }
             }
         }
 
-        public void GetBSIPAVersion()
+        private void AddDetectedMod(Mod mod, string version)
         {
-            string InjectorPath = Path.Combine(App.BeatSaberInstallDirectory, "Beat Saber_Data", "Managed", "IPA.Injector.dll");
-            if (!File.Exists(InjectorPath)) return;
-
-            string InjectorHash = Utils.CalculateMD5(InjectorPath);
-            foreach (Mod mod in AllModsList)
+            if (InstalledMods.All(n => n.Mod != mod))
             {
-                if (mod.name.ToLowerInvariant() == "bsipa")
+                Mod.FileVersion fileVersion = mod.versions.FirstOrDefault(n => n.version == version);
+                if (fileVersion == null)
                 {
-                    foreach (Mod.DownloadLink download in mod.downloads)
-                    {
-                        foreach (Mod.FileHashes fileHash in download.hashMd5)
-                        {
-                            if (fileHash.hash == InjectorHash)
-                            {
-                                AddDetectedMod(mod);
-                            }
-                        }
-                    }
+                    return;
                 }
-            }
-        }
-
-        private void AddDetectedMod(Mod mod)
-        {
-            if (!InstalledMods.Contains(mod))
-            {
-                InstalledMods.Add(mod);
+                InstalledMods.Add(new InstalledMod
+                {
+                    Mod = mod,
+                    Version = fileVersion
+                });
                 if (App.SelectInstalledMods && !DefaultMods.Contains(mod.name))
                 {
                     DefaultMods.Add(mod.name);
@@ -281,31 +255,11 @@ namespace ModAssistant.Pages
             }
         }
 
-        private Mod GetModFromHash(string hash)
-        {
-            foreach (Mod mod in AllModsList)
-            {
-                if (mod.name.ToLowerInvariant() != "bsipa" && mod.status != "declined")
-                {
-                    foreach (Mod.DownloadLink download in mod.downloads)
-                    {
-                        foreach (Mod.FileHashes fileHash in download.hashMd5)
-                        {
-                            if (fileHash.hash == hash)
-                                return mod;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
         public async Task PopulateModsList()
         {
             try
             {
-                var resp = await HttpClient.GetAsync(Utils.Constants.BeatModsAPIUrl + Utils.Constants.BeatModsModsOptions + "&gameVersion=" + MainWindow.GameVersion);
+                var resp = await HttpClient.GetAsync(Utils.Constants.LunarModsAPIUrl + Utils.Constants.LunarModsModsOptions + "&gameVersion=" + MainWindow.GameVersion);
                 var body = await resp.Content.ReadAsStringAsync();
                 ModsList = JsonSerializer.Deserialize<Mod[]>(body);
             }
@@ -317,7 +271,8 @@ namespace ModAssistant.Pages
 
             foreach (Mod mod in ModsList)
             {
-                bool preSelected = mod.required;
+                //bool preSelected = mod.required;
+                bool preSelected = false;
                 if (DefaultMods.Contains(mod.name) || (App.SaveModSelection && App.SavedMods.Contains(mod.name)))
                 {
                     preSelected = true;
@@ -332,11 +287,10 @@ namespace ModAssistant.Pages
                 ModListItem ListItem = new ModListItem()
                 {
                     IsSelected = preSelected,
-                    IsEnabled = !mod.required,
+                    IsEnabled = true,
                     ModName = mod.name,
-                    ModVersion = mod.version,
-                    ModDescription = mod.description.Replace("\r\n", " ").Replace("\n", " "),
-                    ModRequired = mod.required,
+                    ModVersion = mod.latestVersion,
+                    ModDescription = mod.overview.Replace("\r\n", " ").Replace("\n", " "),
                     ModInfo = mod,
                     Category = mod.category
                 };
@@ -359,13 +313,13 @@ namespace ModAssistant.Pages
                     }
                 }
 
-                foreach (Mod installedMod in InstalledMods)
+                foreach (InstalledMod installedMod in InstalledMods)
                 {
-                    if (mod.name == installedMod.name)
+                    if (mod.name == installedMod.Mod.name)
                     {
                         ListItem.InstalledModInfo = installedMod;
                         ListItem.IsInstalled = true;
-                        ListItem.InstalledVersion = installedMod.version;
+                        ListItem.InstalledVersion = installedMod.Version.version;
                         break;
                     }
                 }
@@ -386,6 +340,11 @@ namespace ModAssistant.Pages
             MainWindow.Instance.InstallButton.IsEnabled = false;
             string installDirectory = App.BeatSaberInstallDirectory;
 
+            if (!File.Exists(installDirectory + "winhttp.dll"))
+            {
+                await InstallBepInEx(installDirectory);
+            }
+
             foreach (Mod mod in ModsList)
             {
                 // Ignore mods that are newer than installed version
@@ -394,29 +353,10 @@ namespace ModAssistant.Pages
                 // Ignore mods that are on current version if we aren't reinstalling mods
                 if (mod.ListItem.GetVersionComparison == 0 && !App.ReinstallInstalledMods) continue;
 
-                if (mod.name.ToLowerInvariant() == "bsipa")
+                if (mod.ListItem.IsSelected)
                 {
                     MainWindow.Instance.MainText = $"{string.Format((string)FindResource("Mods:InstallingMod"), mod.name)}...";
                     await Task.Run(async () => await InstallMod(mod, installDirectory));
-                    MainWindow.Instance.MainText = $"{string.Format((string)FindResource("Mods:InstalledMod"), mod.name)}.";
-                    if (!File.Exists(Path.Combine(installDirectory, "winhttp.dll")))
-                    {
-                        await Task.Run(() =>
-                            Process.Start(new ProcessStartInfo
-                            {
-                                FileName = Path.Combine(installDirectory, "IPA.exe"),
-                                WorkingDirectory = installDirectory,
-                                Arguments = "-n"
-                            }).WaitForExit()
-                        );
-                    }
-
-                    Options.Instance.YeetBSIPA.IsEnabled = true;
-                }
-                else if (mod.ListItem.IsSelected)
-                {
-                    MainWindow.Instance.MainText = $"{string.Format((string)FindResource("Mods:InstallingMod"), mod.name)}...";
-                    await Task.Run(async () => await InstallMod(mod, Path.Combine(installDirectory, @"IPA\Pending")));
                     MainWindow.Instance.MainText = $"{string.Format((string)FindResource("Mods:InstalledMod"), mod.name)}.";
                 }
             }
@@ -426,39 +366,16 @@ namespace ModAssistant.Pages
             RefreshModsList();
         }
 
-        private async Task InstallMod(Mod mod, string directory)
+        private async Task InstallBepInEx(string directory)
         {
-            int filesCount = 0;
-            string downloadLink = null;
+            var resp = await HttpClient.GetAsync("https://api.github.com/repos/BepInEx/BepInEx/releases/latest");
+            var body = await resp.Content.ReadAsStringAsync();
+            var root = JsonSerializer.Deserialize<GithubRelease>(body);
+            string downloadLink = root.assets.First(n => n.name.StartsWith("BepInEx_x64")).browser_download_url;
 
-            foreach (Mod.DownloadLink link in mod.downloads)
+            using (Stream stream = await DownloadMod(downloadLink))
             {
-                filesCount = link.hashMd5.Length;
-
-                if (link.type == "universal")
-                {
-                    downloadLink = link.url;
-                    break;
-                }
-                else if (link.type.ToLowerInvariant() == App.BeatSaberInstallType.ToLowerInvariant())
-                {
-                    downloadLink = link.url;
-                    break;
-                }
-            }
-
-            if (string.IsNullOrEmpty(downloadLink))
-            {
-                System.Windows.MessageBox.Show(string.Format((string)FindResource("Mods:ModDownloadLinkMissing"), mod.name));
-                return;
-            }
-
-            while (true)
-            {
-                List<ZipArchiveEntry> files = new List<ZipArchiveEntry>(filesCount);
-
-                using (Stream stream = await DownloadMod(Utils.Constants.BeatModsURL + downloadLink))
-                using (ZipArchive archive = new ZipArchive(stream))
+                using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
                 {
                     foreach (ZipArchiveEntry file in archive.Entries)
                     {
@@ -470,40 +387,94 @@ namespace ModAssistant.Pages
 
                         if (!string.IsNullOrEmpty(file.Name))
                         {
-                            foreach (Mod.DownloadLink download in mod.downloads)
-                            {
-                                foreach (Mod.FileHashes fileHash in download.hashMd5)
-                                {
-                                    using (Stream fileStream = file.Open())
-                                    {
-                                        if (fileHash.hash == Utils.CalculateMD5FromStream(fileStream))
-                                        {
-                                            files.Add(file);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
+                            await ExtractFile(file, Path.Combine(directory, file.FullName), 3.0, "BepInEx", 10);
                         }
-                    }
-
-                    if (files.Count == filesCount)
-                    {
-                        foreach (ZipArchiveEntry file in files)
-                        {
-                            await ExtractFile(file, Path.Combine(directory, file.FullName), 3.0, mod.name, 10);
-                        }
-
-                        break;
                     }
                 }
             }
 
+            string fileName = Path.Combine(App.BeatSaberInstallDirectory, "BepInEx/config/BepInEx.cfg");
+            string text = File.Exists(fileName) ? File.ReadAllText(fileName) : string.Empty;
+            string[] lines = text.Split('\n');
+            bool found = false;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (!lines[i].StartsWith("HideManagerGameObject"))
+                {
+                    continue;
+                }
+
+                lines[i] = "HideManagerGameObject = true";
+                found = true;
+                break;
+            }
+
+            string final = string.Join("\n", lines);
+            if (!found)
+            {
+                final += "[Chainloader]\nHideManagerGameObject = true";
+            }
+
+            File.WriteAllText(fileName, final);
+        }
+
+        private async Task InstallMod(Mod mod, string directory)
+        {
+            string downloadLink = null;
+
+            Mod.FileVersion version = mod.versions.FirstOrDefault(n => n.version == mod.latestVersion);
+            downloadLink = version?.url;
+
+            if (string.IsNullOrEmpty(downloadLink))
+            {
+                System.Windows.MessageBox.Show(string.Format((string)FindResource("Mods:ModDownloadLinkMissing"), mod.name));
+                return;
+            }
+
+            using (Stream stream = await DownloadMod(Utils.Constants.LunarModsURL + downloadLink))
+            using (Stream zipStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(zipStream);
+                zipStream.Position = 0;
+                if (version.md5 != Utils.CalculateMD5FromStream(zipStream))
+                {
+                    // Checksum Mismatch
+                    return;
+                }
+
+                zipStream.Position = 0;
+                using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Read))
+                {
+                    foreach (ZipArchiveEntry file in archive.Entries)
+                    {
+                        string fileDirectory = Path.GetDirectoryName(Path.Combine(directory, file.FullName));
+                        if (!Directory.Exists(fileDirectory))
+                        {
+                            Directory.CreateDirectory(fileDirectory);
+                        }
+
+                        if (!string.IsNullOrEmpty(file.Name))
+                        {
+                            await ExtractFile(file, Path.Combine(directory, file.FullName), 3.0, mod.name, 10);
+                        }
+                    }
+                }
+            }
+
+            string fileName = Path.Combine(App.BeatSaberInstallDirectory, "BepInEx/installed.txt");
+            string text = File.Exists(fileName) ? File.ReadAllText(fileName) : string.Empty;
+            string[] lines = text.Split('\n');
+            File.WriteAllText(fileName, string.Join("\n", lines.Where(n => !n.StartsWith(mod.name))) + $"\n{mod.name}/{version.version}");
+
             if (App.CheckInstalledMods)
             {
                 mod.ListItem.IsInstalled = true;
-                mod.ListItem.InstalledVersion = mod.version;
-                mod.ListItem.InstalledModInfo = mod;
+                mod.ListItem.InstalledVersion = version.version;
+                mod.ListItem.InstalledModInfo = new InstalledMod
+                {
+                    Mod = mod,
+                    Version = version
+                };
             }
         }
 
@@ -536,19 +507,18 @@ namespace ModAssistant.Pages
 
         private void RegisterDependencies(Mod dependent)
         {
-            if (dependent.dependencies.Length == 0)
+            Mod.FileVersion version = dependent.versions.FirstOrDefault(n => n.version == dependent.latestVersion);
+            if (version.dependencies.Length == 0)
                 return;
 
             foreach (Mod mod in ModsList)
             {
-                foreach (Mod.Dependency dep in dependent.dependencies)
+                foreach (string dep in version.dependencies)
                 {
-
-                    if (dep.name == mod.name)
+                    if (dep == mod.name)
                     {
-                        dep.Mod = mod;
                         mod.Dependents.Add(dependent);
-
+                        dependent.Dependencies.Add(mod);
                     }
                 }
             }
@@ -556,16 +526,16 @@ namespace ModAssistant.Pages
 
         private void ResolveDependencies(Mod dependent)
         {
-            if (dependent.ListItem.IsSelected && dependent.dependencies.Length > 0)
+            if (dependent.ListItem.IsSelected && dependent.Dependencies.Count > 0)
             {
-                foreach (Mod.Dependency dependency in dependent.dependencies)
+                foreach (Mod dependency in dependent.Dependencies)
                 {
-                    if (dependency.Mod.ListItem.IsEnabled)
+                    if (dependency.ListItem.IsEnabled)
                     {
-                        dependency.Mod.ListItem.PreviousState = dependency.Mod.ListItem.IsSelected;
-                        dependency.Mod.ListItem.IsSelected = true;
-                        dependency.Mod.ListItem.IsEnabled = false;
-                        ResolveDependencies(dependency.Mod);
+                        dependency.ListItem.PreviousState = dependency.ListItem.IsSelected;
+                        dependency.ListItem.IsSelected = true;
+                        dependency.ListItem.IsEnabled = false;
+                        ResolveDependencies(dependency);
                     }
                 }
             }
@@ -573,14 +543,14 @@ namespace ModAssistant.Pages
 
         private void UnresolveDependencies(Mod dependent)
         {
-            if (!dependent.ListItem.IsSelected && dependent.dependencies.Length > 0)
+            if (!dependent.ListItem.IsSelected && dependent.Dependencies.Count > 0)
             {
-                foreach (Mod.Dependency dependency in dependent.dependencies)
+                foreach (Mod dependency in dependent.Dependencies)
                 {
-                    if (!dependency.Mod.ListItem.IsEnabled)
+                    if (!dependency.ListItem.IsEnabled)
                     {
                         bool needed = false;
-                        foreach (Mod dep in dependency.Mod.Dependents)
+                        foreach (Mod dep in dependency.Dependents)
                         {
                             if (dep.ListItem.IsSelected)
                             {
@@ -588,11 +558,11 @@ namespace ModAssistant.Pages
                                 break;
                             }
                         }
-                        if (!needed && !dependency.Mod.required)
+                        if (!needed)
                         {
-                            dependency.Mod.ListItem.IsSelected = dependency.Mod.ListItem.PreviousState;
-                            dependency.Mod.ListItem.IsEnabled = true;
-                            UnresolveDependencies(dependency.Mod);
+                            dependency.ListItem.IsSelected = dependency.ListItem.PreviousState;
+                            dependency.ListItem.IsEnabled = true;
+                            UnresolveDependencies(dependency);
                         }
                     }
                 }
@@ -634,7 +604,6 @@ namespace ModAssistant.Pages
             public string ModName { get; set; }
             public string ModVersion { get; set; }
             public string ModDescription { get; set; }
-            public bool ModRequired { get; set; }
             public bool PreviousState { get; set; }
 
             public bool IsEnabled { get; set; }
@@ -642,7 +611,7 @@ namespace ModAssistant.Pages
             public Mod ModInfo { get; set; }
             public string Category { get; set; }
 
-            public Mod InstalledModInfo { get; set; }
+            public InstalledMod InstalledModInfo { get; set; }
             public bool IsInstalled { get; set; }
             private SemVersion _installedVersion { get; set; }
             public string InstalledVersion
@@ -697,7 +666,7 @@ namespace ModAssistant.Pages
             {
                 get
                 {
-                    return (!ModInfo.required && IsInstalled);
+                    return (IsInstalled);
                 }
             }
 
@@ -705,7 +674,7 @@ namespace ModAssistant.Pages
             {
                 get
                 {
-                    if (!ModInfo.required && IsInstalled)
+                    if (IsInstalled)
                         return "Visible";
                     else
                         return "Hidden";
@@ -737,22 +706,52 @@ namespace ModAssistant.Pages
             }
         }
 
-        public void UninstallBSIPA(Mod.DownloadLink links)
+        private readonly string[] _bepInExFiles =
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = Path.Combine(App.BeatSaberInstallDirectory, "IPA.exe"),
-                WorkingDirectory = App.BeatSaberInstallDirectory,
-                Arguments = "--revert -n"
-            }).WaitForExit();
+            "BepInEx/core/MonoMod.Utils.xml",
+            "BepInEx/core/MonoMod.Utils.dll",
+            "BepInEx/core/MonoMod.RuntimeDetour.xml",
+            "BepInEx/core/MonoMod.RuntimeDetour.dll",
+            "BepInEx/core/Mono.Cecil.Rocks.dll",
+            "BepInEx/core/Mono.Cecil.Pdb.dll",
+            "BepInEx/core/Mono.Cecil.Mdb.dll",
+            "BepInEx/core/Mono.Cecil.dll",
+            "BepInEx/core/HarmonyXInterop.dll",
+            "BepInEx/core/BepInEx.xml",
+            "BepInEx/core/BepInEx.Preloader.xml",
+            "BepInEx/core/BepInEx.Preloader.dll",
+            "BepInEx/core/BepInEx.Harmony.xml",
+            "BepInEx/core/BepInEx.Harmony.dll",
+            "BepInEx/core/BepInEx.dll",
+            "BepInEx/core/0Harmony20.dll",
+            "BepInEx/core/0Harmony.xml",
+            "BepInEx/core/0Harmony.dll",
+            "winhttp.dll",
+            "doorstop_config.ini",
+            "changelog.txt"
+        };
 
-            foreach (Mod.FileHashes files in links.hashMd5)
+        public void UninstallBepInEx()
+        {
+            var hasBepExe = File.Exists(Path.Combine(App.BeatSaberInstallDirectory, "winhttp.dll"));
+            var hasBepDir = Directory.Exists(Path.Combine(App.BeatSaberInstallDirectory, "BepInEx"));
+
+            if (hasBepDir && hasBepExe)
             {
-                string file = files.file.Replace("IPA/", "").Replace("Data", "Beat Saber_Data");
-                if (File.Exists(Path.Combine(App.BeatSaberInstallDirectory, file)))
-                    File.Delete(Path.Combine(App.BeatSaberInstallDirectory, file));
+                foreach (string file in _bepInExFiles)
+                {
+                    if (File.Exists(Path.Combine(App.BeatSaberInstallDirectory, file)))
+                        File.Delete(Path.Combine(App.BeatSaberInstallDirectory, file));
+                }
+                Options.Instance.YeetBepInEx.IsEnabled = false;
             }
-            Options.Instance.YeetBSIPA.IsEnabled = false;
+            else
+            {
+                var title = (string)FindResource("Mods:UninstallBepInExNotFound:Title");
+                var body = (string)FindResource("Mods:UninstallBepInExNotFound:Body");
+
+                System.Windows.Forms.MessageBox.Show(body, title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void Uninstall_Click(object sender, RoutedEventArgs e)
@@ -772,7 +771,7 @@ namespace ModAssistant.Pages
 
         private void UninstallModFromList(Mod mod)
         {
-            UninstallMod(mod.ListItem.InstalledModInfo);
+            UninstallMod(mod.ListItem.InstalledModInfo.Mod, mod.ListItem.InstalledModInfo.Version);
             mod.ListItem.IsInstalled = false;
             mod.ListItem.InstalledVersion = null;
             if (App.SelectInstalledMods)
@@ -787,40 +786,18 @@ namespace ModAssistant.Pages
             view.Refresh();
         }
 
-        public void UninstallMod(Mod mod)
+        public void UninstallMod(Mod mod, Mod.FileVersion version)
         {
-            Mod.DownloadLink links = null;
-            foreach (Mod.DownloadLink link in mod.downloads)
+            string fileName = Path.Combine(App.BeatSaberInstallDirectory, "BepInEx/installed.txt");
+            if (File.Exists(fileName))
             {
-                if (link.type.ToLowerInvariant() == "universal" || link.type.ToLowerInvariant() == App.BeatSaberInstallType.ToLowerInvariant())
-                {
-                    links = link;
-                    break;
-                }
+                string[] lines = File.ReadAllText(fileName).Split('\n');
+                File.WriteAllText(fileName, string.Join("\n", lines.Where(n => !(n.StartsWith(mod.name) && n.EndsWith(version.version)))));
             }
-            if (mod.name.ToLowerInvariant() == "bsipa")
+            foreach (string file in version.files)
             {
-                var hasIPAExe = File.Exists(Path.Combine(App.BeatSaberInstallDirectory, "IPA.exe"));
-                var hasIPADir = Directory.Exists(Path.Combine(App.BeatSaberInstallDirectory, "IPA"));
-
-                if (hasIPADir && hasIPAExe)
-                {
-                    UninstallBSIPA(links);
-                }
-                else
-                {
-                    var title = (string)FindResource("Mods:UninstallBSIPANotFound:Title");
-                    var body = (string)FindResource("Mods:UninstallBSIPANotFound:Body");
-
-                    System.Windows.Forms.MessageBox.Show(body, title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            foreach (Mod.FileHashes files in links.hashMd5)
-            {
-                if (File.Exists(Path.Combine(App.BeatSaberInstallDirectory, files.file)))
-                    File.Delete(Path.Combine(App.BeatSaberInstallDirectory, files.file));
-                if (File.Exists(Path.Combine(App.BeatSaberInstallDirectory, "IPA", "Pending", files.file)))
-                    File.Delete(Path.Combine(App.BeatSaberInstallDirectory, "IPA", "Pending", files.file));
+                if (File.Exists(Path.Combine(App.BeatSaberInstallDirectory, file)))
+                    File.Delete(Path.Combine(App.BeatSaberInstallDirectory, file));
             }
         }
 

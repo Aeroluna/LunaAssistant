@@ -5,49 +5,47 @@ namespace ModAssistant
 {
     public class Mod
     {
+        public string id;
         public string name;
-        public string version;
-        public string gameVersion;
-        public string _id;
-        public string status;
-        public string authorId;
-        public string uploadedDate;
-        public string updatedDate;
         public Author author;
-        public string description;
-        public string link;
+        public string overview;
         public string category;
-        public DownloadLink[] downloads;
-        public bool required;
-        public Dependency[] dependencies;
+        public string respository;
+        public string createdDate;
+        public string updatedDate;
+        public string latestVersion;
+        public FileVersion[] versions;
         public List<Mod> Dependents = new List<Mod>();
+        public List<Mod> Dependencies = new List<Mod>();
         public Mods.ModListItem ListItem;
 
         public class Author
         {
-            public string _id;
+            public string id;
             public string username;
-            public string lastLogin;
         }
 
-        public class DownloadLink
+        public class FileVersion
         {
-            public string type;
+            public string version;
+            public int alpha;
+            public string[] dependencies;
+            public string[] conflicts;
+            public string status;
+            public string uploadDate;
             public string url;
-            public FileHashes[] hashMd5;
+            public long fileSize;
+            public string changelog;
+            public string[] gameVersions;
+            public string md5;
+            public string sha256;
+            public string[] files;
         }
+    }
 
-        public class FileHashes
-        {
-            public string hash;
-            public string file;
-        }
-
-        public class Dependency
-        {
-            public string name;
-            public string _id;
-            public Mod Mod;
-        }
+    public class InstalledMod
+    {
+        public Mod Mod { get; set; }
+        public Mod.FileVersion Version { get; set; }
     }
 }

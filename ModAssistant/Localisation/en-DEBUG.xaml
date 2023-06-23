@@ -73,8 +73,8 @@
     <sys:String x:Key="Mods:FailedExtract">{0} {1} {2} {3} Mods:FailedExtract</sys:String>
     <sys:String x:Key="Mods:FailedExtractMaxReached">{0} {1} Mods:FailedExtractMaxReached</sys:String>
     <sys:String x:Key="Mods:SearchLabel">Mods:SearchLabel</sys:String>
-    <sys:String x:Key="Mods:UninstallBSIPANotFound:Title">Mods:UninstallBSIPANotFound:Title</sys:String>
-    <sys:String x:Key="Mods:UninstallBSIPANotFound:Body">Mods:UninstallBSIPANotFound:Body</sys:String>
+    <sys:String x:Key="Mods:UninstallBepInExNotFound:Title">Mods:UninstallBepInExNotFound:Title</sys:String>
+    <sys:String x:Key="Mods:UninstallBepInExNotFound:Body">Mods:UninstallBepInExNotFound:Body</sys:String>
 
     <!-- About Page -->
     <sys:String x:Key="About:Title">About:Title</sys:String>
@@ -123,7 +123,7 @@
     <sys:String x:Key="Options:Diagnostics">Options:Diagnostics</sys:String>
     <sys:String x:Key="Options:OpenLogsButton">Options:OpenLogsButton</sys:String>
     <sys:String x:Key="Options:OpenAppDataButton">Options:OpenAppDataButton</sys:String>
-    <sys:String x:Key="Options:UninstallBSIPAButton">Options:UninstallBSIPAButton</sys:String>
+    <sys:String x:Key="Options:UninstallBepInExButton">Options:UninstallBepInExButton</sys:String>
     <sys:String x:Key="Options:RemoveAllModsButton">Options:RemoveAllModsButton</sys:String>
     <sys:String x:Key="Options:ApplicationTheme">Options:ApplicationTheme</sys:String>
     <sys:String x:Key="Options:ExportTemplateButton">Options:ExportTemplateButton</sys:String>
@@ -133,8 +133,8 @@
     <sys:String x:Key="Options:LogUploadFailed:Title">Options:LogUploadFailed:Title</sys:String>
     <sys:String x:Key="Options:LogUploadFailed:Body">Options:LogUploadFailed:Body</sys:String>
     <sys:String x:Key="Options:GettingModList">Options:GettingModList</sys:String>
-    <sys:String x:Key="Options:FindingBSIPAVersion">Options:FindingBSIPAVersion</sys:String>
-    <sys:String x:Key="Options:BSIPAUninstalled">Options:BSIPAUninstalled</sys:String>
+    <sys:String x:Key="Options:FindingBepInExVersion">Options:FindingBepInExVersion</sys:String>
+    <sys:String x:Key="Options:BepInExUninstalled">Options:BepInExUninstalled</sys:String>
     <sys:String x:Key="Options:YeetModsBox:Title">Options:YeetModsBox:Title</sys:String>
     <sys:String x:Key="Options:YeetModsBox:RemoveAllMods">Options:YeetModsBox:RemoveAllMods</sys:String>
     <sys:String x:Key="Options:YeetModsBox:CannotBeUndone">Options:YeetModsBox:CannotBeUndone</sys:String>

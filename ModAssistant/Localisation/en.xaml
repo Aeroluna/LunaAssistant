@@ -14,7 +14,7 @@
     <sys:String x:Key="App:Exception">Exception</sys:String>
 
     <!-- Main Window -->
-    <sys:String x:Key="MainWindow:WindowTitle">Mod Assistant</sys:String>
+    <sys:String x:Key="MainWindow:WindowTitle">Luna Assistant</sys:String>
     <sys:String x:Key="MainWindow:IntroButton">Intro</sys:String>
     <sys:String x:Key="MainWindow:ModsButton">Mods</sys:String>
     <sys:String x:Key="MainWindow:AboutButton">About</sys:String>
@@ -104,8 +104,8 @@
     <sys:String x:Key="Mods:FailedExtract">Failed to extract {0}, trying again in {1} seconds. ({2}/{3})</sys:String>
     <sys:String x:Key="Mods:FailedExtractMaxReached">Failed to extract {0} after max attempts ({1}), skipping. This mod might not work properly so proceed at your own risk</sys:String>
     <sys:String x:Key="Mods:SearchLabel">Search...</sys:String>
-    <sys:String x:Key="Mods:UninstallBSIPANotFound:Title">Failed to Uninstall BSIPA</sys:String>
-    <sys:String x:Key="Mods:UninstallBSIPANotFound:Body">BSIPA installation not found, uninstall operation skipped.</sys:String>
+    <sys:String x:Key="Mods:UninstallBepInExNotFound:Title">Failed to Uninstall BepInEx</sys:String>
+    <sys:String x:Key="Mods:UninstallBepInExNotFound:Body">BepInEx installation not found, uninstall operation skipped.</sys:String>
 
     <!-- About Page -->
     <sys:String x:Key="About:Title">About</sys:String>
@@ -163,7 +163,7 @@
     <sys:String x:Key="Options:Diagnostics">Diagnostics</sys:String>
     <sys:String x:Key="Options:OpenLogsButton">Open Logs</sys:String>
     <sys:String x:Key="Options:OpenAppDataButton">Open AppData</sys:String>
-    <sys:String x:Key="Options:UninstallBSIPAButton">Uninstall BSIPA</sys:String>
+    <sys:String x:Key="Options:UninstallBepInExButton">Uninstall BepInEx</sys:String>
     <sys:String x:Key="Options:RemoveAllModsButton">Remove All Mods</sys:String>
     <sys:String x:Key="Options:ApplicationTheme">Application Theme</sys:String>
     <sys:String x:Key="Options:ExportTemplateButton">Export Template</sys:String>
@@ -173,8 +173,8 @@
     <sys:String x:Key="Options:LogUploadFailed:Title">Uploading log failed!</sys:String>
     <sys:String x:Key="Options:LogUploadFailed:Body">Could not upload log file to Teknik, please try again or send the file manually.</sys:String>
     <sys:String x:Key="Options:GettingModList">Getting Mod List</sys:String>
-    <sys:String x:Key="Options:FindingBSIPAVersion">Finding BSIPA Version</sys:String>
-    <sys:String x:Key="Options:BSIPAUninstalled">BSIPA Uninstalled</sys:String>
+    <sys:String x:Key="Options:FindingBepInExVersion">Finding BepInEx Version</sys:String>
+    <sys:String x:Key="Options:BepInExUninstalled">BepInEx Uninstalled</sys:String>
     <sys:String x:Key="Options:YeetModsBox:Title">Uninstall All Mods?</sys:String>
     <sys:String x:Key="Options:YeetModsBox:RemoveAllMods">Are you sure you want to remove ALL mods?</sys:String>
     <sys:String x:Key="Options:YeetModsBox:CannotBeUndone">This cannot be undone.</sys:String>

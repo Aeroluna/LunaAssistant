@@ -346,12 +346,6 @@
             HorizontalAlignment="Left"
             Orientation="Horizontal">
                 <Button
-                Height="30"
-                Margin="5"
-                Padding="5"
-                Click="OpenLogsDirButton_Click"
-                Content="{DynamicResource Options:OpenLogsButton}" />
-                <Button
                 x:Name="OpenAppData"
                 Height="30"
                 Margin="5"
@@ -359,12 +353,12 @@
                 Click="OpenAppDataButton_Click"
                 Content="{DynamicResource Options:OpenAppDataButton}" />
                 <Button
-                x:Name="YeetBSIPA"
+                x:Name="YeetBepInEx"
                 Height="30"
                 Margin="5"
                 Padding="5"
-                Click="YeetBSIPAButton_Click"
-                Content="{DynamicResource Options:UninstallBSIPAButton}" />
+                Click="YeetBepInExButton_Click"
+                Content="{DynamicResource Options:UninstallBepInExButton}" />
                 <Button
                 Height="30"
                 Margin="5"

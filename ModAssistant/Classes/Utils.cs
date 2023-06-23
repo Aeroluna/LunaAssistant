@@ -26,13 +26,10 @@ namespace ModAssistant
         public class Constants
         {
             public const string BeatSaberAPPID = "620980";
-            public const string BeatModsAPIUrl = "https://beatmods.com/api/v1/";
-            public const string TeknikAPIUrl = "https://api.teknik.io/v1/";
-            public const string BeatModsURL = "https://beatmods.com";
-            public const string BeatModsVersions = "https://versions.beatmods.com/versions.json";
-            public const string BeatModsAlias = "https://alias.beatmods.com/aliases.json";
-            public const string WeebCDNAPIURL = "https://pat.assistant.moe/api/v1.0/";
-            public const string BeatModsModsOptions = "mod?status=approved";
+            public const string LunarModsAPIUrl = "https://lunarmods.aeroluna.dev/api/v1/";
+            public const string LunarModsURL = "https://lunarmods.aeroluna.dev";
+            public const string LunarModsVersions = LunarModsAPIUrl + "gameVersion";
+            public const string LunarModsModsOptions = "mod?status=1,2";
             public const string MD5Spacer = "                                 ";
             public static readonly char[] IllegalCharacters = new char[]
             {
